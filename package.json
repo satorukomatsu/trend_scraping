@@ -10,7 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@line/bot-sdk": "^7.5.2",
+    "body-parser": "^1.20.1",
     "csv-stringify": "^6.2.4",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "fs": "^0.0.1-security",
     "iconv-lite": "^0.6.3",
     "jsdom": "^21.1.0",
