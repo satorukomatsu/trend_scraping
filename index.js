@@ -57,18 +57,50 @@ app.post("/line/bot/push", async (req, res, next) => {
 });
 
 (async () => {
-    const url = "https://prtimes.jp/"
+    //アクセストークン取得とLINE Clientインスタンスの作成
+    const pushUrl = "https://api.line.me/v2/oauth/accessToken"
+    const headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    const data = {
+        "grant_type": "client_credentials",
+        "client_id": process.env.CLIENT_ID,
+        "client_secret": process.env.CLIENT_SECRET
+    }
+    const params = new URLSearchParams()
+    Object.keys(data).forEach((key) => params.append(key, data[key]))
+    const options = {
+        method: "POST",
+        headers: headers,
+        body: params
+    }
+    const lineAuthRes = await fetch(pushUrl, options)
+    const resTxt = await lineAuthRes.text()
+    const token = JSON.parse(resTxt).access_token
+    const client = new line.Client({
+        channelAccessToken: token
+    });
+    
+    //PRTIMESからプレスリリースを取得して通知のメッセージを作成
+    const url = "https://prtimes.jp"
     const response = await fetch(url)
     const body = await response.text()
     const dom = new JSDOM(body)
     const articles = dom.window.document.querySelector(".top-latest-articles__container").children
-    const result = []
+    let resultTxt = ""
     for (let i = 0; i < articles.length; i++) {
         const articleDom = new JSDOM(articles[i].innerHTML)
-        const title = articleDom.window.document.querySelector("h3")
-        result.push(!title ? ["nothing"]: {"number": i, "title": title.textContent.trim()})
+        const title = articleDom.window.document.querySelector(".list-article__title")
+        const anchor = articleDom.window.document.querySelector("a")
+        const link = anchor.getAttribute("href")
+        resultTxt = resultTxt.concat(!title ? "nothing\n\n": `${title.textContent.trim()}\n${url}${link}\n\n`)
     }
-    const output = stringify(result)
-    console.log(output)
-    fs.writeFileSync("PR_Times.csv", output)
+
+    //プッシュメッセージの送信
+    const message = {
+        type: "text",
+        text: resultTxt
+    }
+    client.pushMessage(process.env.USER_ID, message)
+    console.log(resultTxt)
 })();
