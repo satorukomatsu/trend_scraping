@@ -102,5 +102,52 @@ app.post("/line/bot/push", async (req, res, next) => {
         text: resultTxt
     }
     client.pushMessage(process.env.USER_ID, message)
-    console.log(resultTxt)
+})();
+
+(async () => {
+    //アクセストークン取得とLINE Clientインスタンスの作成
+    const pushUrl = "https://api.line.me/v2/oauth/accessToken"
+    const headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    const data = {
+        "grant_type": "client_credentials",
+        "client_id": process.env.CLIENT_ID,
+        "client_secret": process.env.CLIENT_SECRET
+    }
+    const params = new URLSearchParams()
+    Object.keys(data).forEach((key) => params.append(key, data[key]))
+    const options = {
+        method: "POST",
+        headers: headers,
+        body: params
+    }
+    const lineAuthRes = await fetch(pushUrl, options)
+    const resTxt = await lineAuthRes.text()
+    const token = JSON.parse(resTxt).access_token
+    const client = new line.Client({
+        channelAccessToken: token
+    });
+    
+    //qiitaからトレンドを取得して通知のメッセージを作成
+    const url = "https://qiita.com/"
+    const response = await fetch(url)
+    const body = await response.text()
+    const dom = new JSDOM(body)
+    const articles = dom.window.document.querySelector(".style-1p44k52").children
+    let resultTxt = ""
+    for (let i = 0; i < articles.length; i++) {
+        const articleDom = new JSDOM(articles[i].innerHTML)
+        const title = articleDom.window.document.querySelector("h2")
+        const anchor = articleDom.window.document.querySelector("a")
+        const link = anchor.getAttribute("href")
+        resultTxt = resultTxt.concat(!title ? "nothing\n\n": `${title.textContent.trim()}\n${url}${link}\n\n`)
+    }
+
+    //プッシュメッセージの送信
+    const message = {
+        type: "text",
+        text: resultTxt
+    }
+    client.pushMessage(process.env.USER_ID, message)
 })();
