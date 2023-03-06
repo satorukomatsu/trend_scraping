@@ -141,7 +141,7 @@ app.post("/line/bot/push", async (req, res, next) => {
         const title = articleDom.window.document.querySelector("h2")
         const anchor = articleDom.window.document.querySelector("a")
         const link = anchor.getAttribute("href")
-        resultTxt = resultTxt.concat(!title ? "nothing\n\n": `${title.textContent.trim()}\n${url}${link}\n\n`)
+        resultTxt = resultTxt.concat(!title ? "nothing\n\n": `${title.textContent.trim()}\n${link}\n\n`)
     }
 
     //プッシュメッセージの送信
